@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OMEGA-AI v3</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a0f;color:#e2e8f0;height:100vh;overflow:hidden}
+  ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-track{background:#1a1a2e} ::-webkit-scrollbar-thumb{background:#4a5568;border-radius:3px}
+  
+  .app{display:flex;flex-direction:column;height:100vh}
+  
+  /* Header */
+  .header{background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:1px solid #2d3748;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+  .logo{font-size:20px;font-weight:900;background:linear-gradient(135deg,#667eea,#764ba2,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .logo-sub{font-size:11px;color:#718096;margin-top:-2px}
+  .status-badge{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .badge{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:600;letter-spacing:.5px}
+  .badge-free{background:#1a3a2a;color:#48bb78;border:1px solid #276749}
+  .badge-local{background:#1a2a3a;color:#63b3ed;border:1px solid #2c5282}
+  
+  /* Tabs */
+  .tabs{background:#111827;border-bottom:1px solid #1f2937;display:flex;overflow-x:auto;flex-shrink:0}
+  .tab{padding:10px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;color:#6b7280;border-bottom:2px solid transparent;transition:all .2s}
+  .tab:hover{color:#a78bfa;background:#1f2937}
+  .tab.active{color:#a78bfa;border-bottom-color:#7c3aed;background:#1f2937}
+  
+  /* Content */
+  .content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  .panel{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+  
+  /* Cards */
+  .card{background:#1a1a2e;border:1px solid #2d3748;border-radius:12px;padding:16px}
+  .card-title{font-size:13px;font-weight:600;color:#a78bfa;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+  
+  /* Provider grid */
+  .provider-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .provider-card{background:#111827;border:2px solid #2d3748;border-radius:10px;padding:12px;cursor:pointer;transition:all .2s;position:relative}
+  .provider-card:hover{border-color:#7c3aed;transform:translateY(-1px)}
+  .provider-card.active{border-color:#7c3aed;background:#1f1040}
+  .provider-name{font-weight:700;font-size:14px;margin-bottom:4px}
+  .provider-desc{font-size:11px;color:#9ca3af;line-height:1.4}
+  .provider-tag{position:absolute;top:8px;right:8px;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700}
+  .tag-free{background:#064e3b;color:#34d399}
+  .tag-local{background:#1e3a5f;color:#60a5fa}
+  .tag-paid{background:#451a03;color:#fb923c}
+  
+  /* Model select */
+  .select{background:#0f172a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:13px;width:100%;cursor:pointer}
+  .select option{background:#1a1a2e}
+  
+  /* Input areas */
+  .input{background:#0f172a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:10px 12px;font-size:13px;width:100%;outline:none;transition:border-color .2s}
+  .input:focus{border-color:#7c3aed}
+  .input-password{font-family:monospace}
+  textarea.input{resize:vertical;min-height:80px;font-family:inherit}
+  
+  /* Buttons */
+  .btn{padding:9px 18px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff}
+  .btn-primary:hover{background:linear-gradient(135deg,#6d28d9,#5b21b6);transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn-secondary{background:#1f2937;color:#d1d5db;border:1px solid #374151}
+  .btn-secondary:hover{background:#374151}
+  .btn-success{background:#064e3b;color:#34d399;border:1px solid #065f46}
+  .btn-success:hover{background:#065f46}
+  .btn-danger{background:#450a0a;color:#f87171;border:1px solid #7f1d1d}
+  .btn-sm{padding:5px 12px;font-size:12px}
+  
+  /* Chat */
+  .chat-msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 0;min-height:0}
+  .msg{padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.6;max-width:85%;word-wrap:break-word;white-space:pre-wrap}
+  .msg-user{background:linear-gradient(135deg,#312e81,#3730a3);align-self:flex-end;border-bottom-right-radius:4px}
+  .msg-ai{background:#1e2035;border:1px solid #2d3748;align-self:flex-start;border-bottom-left-radius:4px}
+  .msg-meta{font-size:10px;color:#6b7280;margin-top:4px}
+  .msg-error{background:#2d1515;border:1px solid #7f1d1d;color:#fc8181;align-self:flex-start}
+  .msg-system{background:#1a2035;border:1px solid #374151;color:#94a3b8;font-size:12px;text-align:center;align-self:center;padding:6px 14px}
+  
+  .chat-input-row{display:flex;gap:8px;margin-top:8px;flex-shrink:0}
+  .chat-input-row textarea{flex:1;height:60px;resize:none}
+  
+  /* Stats row */
+  .stats-row{display:flex;gap:8px;flex-wrap:wrap}
+  .stat{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:10px 14px;flex:1;min-width:100px}
+  .stat-val{font-size:22px;font-weight:700;color:#a78bfa}
+  .stat-label{font-size:11px;color:#6b7280;margin-top:2px}
+  
+  /* Expert cards */
+  .expert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+  .expert-card{background:#111827;border:1px solid #2d3748;border-radius:10px;padding:12px;cursor:pointer;transition:all .2s;text-align:center}
+  .expert-card:hover{border-color:#7c3aed;background:#1f1040}
+  .expert-card.selected{border-color:#7c3aed;background:#1f1040}
+  .expert-icon{font-size:28px;margin-bottom:6px}
+  .expert-name{font-size:12px;font-weight:600;color:#e2e8f0}
+  .expert-role{font-size:10px;color:#6b7280;margin-top:2px}
+  
+  /* Pipeline */
+  .pipeline-steps{display:flex;flex-direction:column;gap:6px}
+  .pipeline-step{background:#111827;border:1px solid #2d3748;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+  .step-num{width:24px;height:24px;border-radius:50%;background:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+  .step-arrow{color:#4b5563;font-size:18px;text-align:center;margin:2px 0}
+  
+  /* Compare */
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .compare-result{background:#111827;border:1px solid #2d3748;border-radius:10px;padding:12px}
+  .compare-header{font-size:12px;font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  
+  /* Decode */
+  .format-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .format-chip{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #374151;background:#1f2937;color:#9ca3af;transition:all .2s}
+  .format-chip.active{background:#7c3aed;color:#fff;border-color:#7c3aed}
+  
+  /* Alerts */
+  .alert{padding:10px 14px;border-radius:8px;font-size:12px;line-height:1.5}
+  .alert-info{background:#1e3a5f;border:1px solid #2563eb;color:#93c5fd}
+  .alert-success{background:#064e3b;border:1px solid #059669;color:#6ee7b7}
+  .alert-warning{background:#451a03;border:1px solid #d97706;color:#fcd34d}
+  .alert-error{background:#450a0a;border:1px solid #dc2626;color:#fca5a5}
+  
+  /* Loading */
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid #4b5563;border-top-color:#a78bfa;border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  
+  /* Scrollable result */
+  .result-box{background:#0f172a;border:1px solid #1f2937;border-radius:8px;padding:12px;font-size:12px;font-family:monospace;white-space:pre-wrap;max-height:300px;overflow-y:auto;color:#d1d5db;line-height:1.6}
+  
+  /* Key row */
+  .key-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+  
+  label{font-size:12px;color:#9ca3af;display:block;margin-bottom:4px}
+  .flex{display:flex;gap:8px;align-items:center}
+  .flex-col{display:flex;flex-direction:column;gap:10px}
+  .grow{flex:1}
+  .mt4{margin-top:4px}
+  .text-xs{font-size:11px;color:#6b7280}
+  .text-sm{font-size:12px}
+  .text-success{color:#34d399}
+  .text-error{color:#f87171}
+  .text-warning{color:#fbbf24}
+  .bold{font-weight:700}
+  .divider{border:none;border-top:1px solid #1f2937;margin:4px 0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ══════════════════════════════════════════════════════
+//  PROVIDERS CONFIG
+// ══════════════════════════════════════════════════════
+const PROVIDERS = {
+  groq: {
+    name: "Groq", icon: "⚡", color: "#f59e0b", tag: "FREE",
+    desc: "Ultra-fast inference. Free 14,400 req/day. No credit card.",
+    keyUrl: "https://console.groq.com",
+    models: [
+      {id:"llama-3.3-70b-versatile",           name:"Llama 3.3 70B Versatile",       free:true},
+      {id:"llama-3.1-70b-versatile",            name:"Llama 3.1 70B Versatile",       free:true},
+      {id:"llama-3.1-8b-instant",               name:"Llama 3.1 8B Instant",          free:true},
+      {id:"llama3-70b-8192",                    name:"Llama 3 70B 8k",                free:true},
+      {id:"llama3-8b-8192",                     name:"Llama 3 8B 8k",                 free:true},
+      {id:"llama-3.2-90b-vision-preview",       name:"Llama 3.2 90B Vision",          free:true},
+      {id:"llama-3.2-11b-vision-preview",       name:"Llama 3.2 11B Vision",          free:true},
+      {id:"llama-3.2-3b-preview",               name:"Llama 3.2 3B",                  free:true},
+      {id:"llama-3.2-1b-preview",               name:"Llama 3.2 1B",                  free:true},
+      {id:"llama3-groq-70b-8192-tool-use-preview", name:"Llama 3 70B Tool Use",       free:true},
+      {id:"llama3-groq-8b-8192-tool-use-preview",  name:"Llama 3 8B Tool Use",        free:true},
+      {id:"deepseek-r1-distill-llama-70b",      name:"DeepSeek R1 Llama 70B",         free:true},
+      {id:"qwen-qwq-32b",                       name:"Qwen QwQ 32B (reasoning)",      free:true},
+      {id:"qwen-2.5-coder-32b",                 name:"Qwen 2.5 Coder 32B",            free:true},
+      {id:"qwen-2.5-32b",                       name:"Qwen 2.5 32B",                  free:true},
+      {id:"mixtral-8x7b-32768",                 name:"Mixtral 8x7B 32k",              free:true},
+      {id:"gemma2-9b-it",                       name:"Gemma 2 9B",                    free:true},
+      {id:"gemma-7b-it",                        name:"Gemma 7B",                      free:true},
+      {id:"llama-guard-3-8b",                   name:"Llama Guard 3 8B (safety)",     free:true},
+    ]
+  },
+  gemini: {
+    name: "Google Gemini", icon: "🌟", color: "#4285f4", tag: "FREE",
+    desc: "Gemini 2.5/2.0/1.5. Free 1500 req/day. No credit card.",
+    keyUrl: "https://aistudio.google.com/app/apikey",
+    models: [
+      {id:"gemini-2.5-flash",          name:"Gemini 2.5 Flash ★",      free:true},
+      {id:"gemini-2.5-pro",            name:"Gemini 2.5 Pro ★",         free:true},
+      {id:"gemini-2.5-flash-lite",     name:"Gemini 2.5 Flash Lite",    free:true},
+      {id:"gemini-2.0-flash",          name:"Gemini 2.0 Flash",         free:true},
+      {id:"gemini-2.0-flash-lite",     name:"Gemini 2.0 Flash Lite",    free:true},
+      {id:"gemini-2.0-flash-thinking-exp", name:"Gemini 2.0 Flash Thinking (exp)", free:true},
+      {id:"gemini-1.5-flash",          name:"Gemini 1.5 Flash",         free:true},
+      {id:"gemini-1.5-flash-8b",       name:"Gemini 1.5 Flash 8B",      free:true},
+      {id:"gemini-1.5-pro",            name:"Gemini 1.5 Pro",           free:true},
+    ]
+  },
+  openrouter: {
+    name: "OpenRouter", icon: "🔀", color: "#8b5cf6", tag: "FREE",
+    desc: "100+ models aggregated. Free tier — $0 account works.",
+    keyUrl: "https://openrouter.ai/keys",
+    models: [
+      {id:"meta-llama/llama-3.3-70b-instruct:free",       name:"Llama 3.3 70B (free)",         free:true},
+      {id:"meta-llama/llama-3.1-8b-instruct:free",        name:"Llama 3.1 8B (free)",          free:true},
+      {id:"meta-llama/llama-3.2-3b-instruct:free",        name:"Llama 3.2 3B (free)",          free:true},
+      {id:"meta-llama/llama-3.2-1b-instruct:free",        name:"Llama 3.2 1B (free)",          free:true},
+      {id:"mistralai/mistral-7b-instruct:free",            name:"Mistral 7B (free)",            free:true},
+      {id:"mistralai/mistral-small:free",                  name:"Mistral Small (free)",         free:true},
+      {id:"google/gemma-3-27b-it:free",                   name:"Gemma 3 27B (free)",           free:true},
+      {id:"google/gemma-3-12b-it:free",                   name:"Gemma 3 12B (free)",           free:true},
+      {id:"google/gemma-3-4b-it:free",                    name:"Gemma 3 4B (free)",            free:true},
+      {id:"google/gemma-3-1b-it:free",                    name:"Gemma 3 1B (free)",            free:true},
+      {id:"google/gemma-2-9b-it:free",                    name:"Gemma 2 9B (free)",            free:true},
+      {id:"qwen/qwen3-235b-a22b:free",                    name:"Qwen3 235B A22B (free)",       free:true},
+      {id:"qwen/qwen3-30b-a3b:free",                      name:"Qwen3 30B A3B (free)",         free:true},
+      {id:"qwen/qwen3-14b:free",                          name:"Qwen3 14B (free)",             free:true},
+      {id:"qwen/qwen3-8b:free",                           name:"Qwen3 8B (free)",              free:true},
+      {id:"qwen/qwen-2-7b-instruct:free",                 name:"Qwen 2 7B (free)",             free:true},
+      {id:"deepseek/deepseek-chat:free",                  name:"DeepSeek V3 (free)",           free:true},
+      {id:"deepseek/deepseek-r1:free",                    name:"DeepSeek R1 reasoning (free)", free:true},
+      {id:"deepseek/deepseek-r1-distill-qwen-32b:free",   name:"DeepSeek R1 Qwen 32B (free)",  free:true},
+      {id:"microsoft/phi-3-mini-128k-instruct:free",      name:"Phi-3 Mini 128k (free)",       free:true},
+      {id:"microsoft/phi-3-medium-128k-instruct:free",    name:"Phi-3 Medium 128k (free)",     free:true},
+      {id:"openchat/openchat-7b:free",                    name:"OpenChat 7B (free)",           free:true},
+      {id:"huggingfaceh4/zephyr-7b-beta:free",            name:"Zephyr 7B Beta (free)",        free:true},
+      {id:"nousresearch/hermes-3-llama-3.1-405b:free",    name:"Hermes 3 Llama 405B (free)",   free:true},
+    ]
+  },
+  ollama: {
+    name: "Ollama (Local)", icon: "🖥️", color: "#10b981", tag: "LOCAL",
+    desc: "100% offline, unlimited. Install from ollama.com.",
+    keyUrl: "https://ollama.com",
+    models: [
+      {id:"llama3.3",           name:"Llama 3.3 70B",          free:true},
+      {id:"llama3.2",           name:"Llama 3.2 3B",           free:true},
+      {id:"llama3.1",           name:"Llama 3.1 8B",           free:true},
+      {id:"llama3",             name:"Llama 3 8B",             free:true},
+      {id:"llama2",             name:"Llama 2 7B",             free:true},
+      {id:"mistral",            name:"Mistral 7B",             free:true},
+      {id:"mistral-nemo",       name:"Mistral Nemo 12B",       free:true},
+      {id:"mixtral",            name:"Mixtral 8x7B",           free:true},
+      {id:"gemma3",             name:"Gemma 3 4B",             free:true},
+      {id:"gemma2",             name:"Gemma 2 9B",             free:true},
+      {id:"gemma",              name:"Gemma 7B",               free:true},
+      {id:"phi4",               name:"Phi-4 14B",              free:true},
+      {id:"phi3",               name:"Phi-3 Mini",             free:true},
+      {id:"qwen3",              name:"Qwen3 8B",               free:true},
+      {id:"qwen2.5",            name:"Qwen 2.5 7B",            free:true},
+      {id:"qwen2.5-coder",      name:"Qwen 2.5 Coder 7B",      free:true},
+      {id:"deepseek-r1",        name:"DeepSeek R1 7B",         free:true},
+      {id:"deepseek-coder-v2",  name:"DeepSeek Coder V2 16B",  free:true},
+      {id:"codellama",          name:"Code Llama 7B",          free:true},
+      {id:"wizardlm2",          name:"WizardLM 2 7B",          free:true},
+      {id:"neural-chat",        name:"Neural Chat 7B",         free:true},
+      {id:"dolphin-mistral",    name:"Dolphin Mistral 7B",     free:true},
+      {id:"tinyllama",          name:"TinyLlama 1.1B",         free:true},
+      {id:"orca-mini",          name:"Orca Mini 3B",           free:true},
+    ]
+  },
+  deepseek: {
+    name: "DeepSeek", icon: "🐳", color: "#0ea5e9", tag: "PAID",
+    desc: "DeepSeek V3/R1. Wymaga doładowania salda.",
+    keyUrl: "https://platform.deepseek.com",
+    models: [
+      {id:"deepseek-chat",      name:"DeepSeek V3",            free:false},
+      {id:"deepseek-reasoner",  name:"DeepSeek R1 (reasoning)",free:false},
+    ]
+  }
+};
+
+const EXPERTS = [
+  {id:"dev", icon:"💻", name:"Programista", role:"Kod & Architektura", prompt:"Jesteś ekspertem programistą. Odpowiadasz precyzyjnie na pytania o kod, architekturę i inżynierię oprogramowania."},
+  {id:"analyst", icon:"📊", name:"Analityk", role:"Dane & Wgląd", prompt:"Jesteś ekspertem analitykiem danych. Analizujesz dane, wyciągasz wnioski i tworzysz raporty."},
+  {id:"sci", icon:"🔬", name:"Naukowiec", role:"Badania & Fakty", prompt:"Jesteś ekspertem naukowym. Odpowiadasz na pytania naukowe z precyzją, cytując dowody."},
+  {id:"sec", icon:"🔐", name:"Specjalista ds. Bezpieczeństwa", role:"Cyber & Bezpieczeństwo", prompt:"Jesteś ekspertem ds. cyberbezpieczeństwa. Analizujesz zagrożenia i proponujesz rozwiązania."},
+  {id:"math", icon:"🧮", name:"Matematyk", role:"Obliczenia & Dowody", prompt:"Jesteś ekspertem matematykiem. Rozwiązujesz problemy matematyczne krok po kroku."},
+  {id:"writer", icon:"✍️", name:"Pisarz", role:"Tekst & Kreatywność", prompt:"Jesteś ekspertem pisarzem. Tworzysz wysokiej jakości teksty, eseje i treści kreatywne."},
+  {id:"legal", icon:"⚖️", name:"Prawnik", role:"Prawo & Regulacje", prompt:"Jesteś ekspertem prawnym. Analizujesz kwestie prawne i regulacyjne z precyzją."},
+  {id:"doctor", icon:"🏥", name:"Lekarz", role:"Medycyna & Zdrowie", prompt:"Jesteś ekspertem medycznym. Odpowiadasz na pytania o zdrowie i medycynę. Zawsze radzisz konsultację z lekarzem."},
+  {id:"finance", icon:"💰", name:"Finansista", role:"Finanse & Inwestycje", prompt:"Jesteś ekspertem finansowym. Analizujesz rynki, strategie inwestycyjne i finanse."},
+  {id:"ai", icon:"🤖", name:"Inżynier AI", role:"ML & Modele AI", prompt:"Jesteś ekspertem AI/ML. Tłumaczysz koncepcje uczenia maszynowego i projektujesz systemy AI."},
+];
+
+// ══════════════════════════════════════════════════════
+//  PERSISTENCE (localStorage)
+// ══════════════════════════════════════════════════════
+const STORAGE_KEY = "omega_ai_v3";
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
+  catch { return {}; }
+}
+function saveState(updates) {
+  try {
+    const s = loadState();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({...s,...updates}));
+  } catch {}
+}
+
+// ══════════════════════════════════════════════════════
+//  AI CALL via Tasklet tools bridge
+// ══════════════════════════════════════════════════════
+async function callAI({provider, model, messages, api_key, system_prompt}) {
+  if (!window.tasklet) return {error: "Tasklet bridge not available"};
+  try {
+    const res = await window.tasklet.invoke("run_command", {
+      command: `cd /tasklet/agent/home/omega-ai && uv run --with httpx python3 omega.py chat '${JSON.stringify({provider,model,messages,api_key,system_prompt}).replace(/'/g,"'\\''")}'`
+    });
+    const text = (res?.log || res?.output || "").trim();
+    const jsonStart = text.lastIndexOf('\n{');
+    const jsonText = jsonStart >= 0 ? text.slice(jsonStart+1) : text;
+    return JSON.parse(jsonText);
+  } catch(e) {
+    return {error: String(e)};
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  DECODE UTILS (client-side, no API needed)
+// ══════════════════════════════════════════════════════
+function decode(text, format) {
+  try {
+    switch(format) {
+      case "base64_decode": return atob(text.trim());
+      case "base64_encode": return btoa(text);
+      case "url_decode": return decodeURIComponent(text);
+      case "url_encode": return encodeURIComponent(text);
+      case "hex_decode": return text.trim().replace(/\s/g,'').match(/.{2}/g).map(b=>String.fromCharCode(parseInt(b,16))).join('');
+      case "hex_encode": return Array.from(text).map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+      case "binary_decode": return text.trim().split(/\s+/).map(b=>String.fromCharCode(parseInt(b,2))).join('');
+      case "binary_encode": return Array.from(text).map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+      case "rot13": return text.replace(/[a-zA-Z]/g,c=>{const b=c<='Z'?65:97;return String.fromCharCode((c.charCodeAt(0)-b+13)%26+b)});
+      case "reverse": return text.split('').reverse().join('');
+      case "unicode": return Array.from(text).map(c=>'U+'+c.codePointAt(0).toString(16).toUpperCase().padStart(4,'0')).join(' ');
+      case "morse": {
+        const M={A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',0:'-----',1:'.----',2:'..---',3:'...--',4:'....-',5:'.....',6:'-....',7:'--...',8:'---..',9:'----.',' ':'/'};
+        return text.toUpperCase().split('').map(c=>M[c]||'?').join(' ');
+      }
+      default: return "Nieznany format";
+    }
+  } catch(e) { return "Błąd: " + e.message; }
+}
+
+// ══════════════════════════════════════════════════════
+//  COMPONENTS
+// ══════════════════════════════════════════════════════
+
+function ProviderBadge({tag}) {
+  if(tag==="FREE") return <span className="provider-tag tag-free">FREE</span>;
+  if(tag==="LOCAL") return <span className="provider-tag tag-local">LOCAL</span>;
+  return <span className="provider-tag tag-paid">PAID</span>;
+}
+
+// Settings Panel
+function SettingsPanel({keys, setKeys}) {
+  const [vals, setVals] = useState({...keys});
+  const [testing, setTesting] = useState({});
+  const [results, setResults] = useState({});
+
+  const save = (p, v) => {
+    const next = {...vals, [p]: v};
+    setVals(next);
+  };
+  const saveAll = () => {
+    setKeys(vals);
+    saveState({api_keys: vals});
+    alert("Klucze zapisane!");
+  };
+  const test = async (p) => {
+    if(p==="ollama") { setResults(r=>({...r,[p]:"Sprawdź czy Ollama działa na localhost:11434"})); return; }
+    if(!vals[p]) { setResults(r=>({...r,[p]:"Brak klucza!"})); return; }
+    setTesting(t=>({...t,[p]:true}));
+    const res = await callAI({provider:p, model:PROVIDERS[p].models[0].id, messages:[{role:"user",content:"Hi"}], api_key:vals[p]});
+    setTesting(t=>({...t,[p]:false}));
+    setResults(r=>({...r,[p]: res.error ? "❌ "+res.error.slice(0,80) : "✅ OK — "+res.provider+"/"+res.model}));
+  };
+
+  return (
+    <div className="panel">
+      <div className="card">
+        <div className="card-title">🔑 Klucze API — Darmowe Providery</div>
+        <div className="alert alert-success" style={{marginBottom:12}}>
+          💡 Wszystkie poniższe providery mają <strong>darmowe tiery</strong> — nie potrzebujesz karty kredytowej dla Groq, Gemini i OpenRouter!
+        </div>
+        <div className="flex-col">
+          {Object.entries(PROVIDERS).filter(([k])=>k!=="ollama").map(([pid,p])=>(
+            <div key={pid} style={{borderBottom:"1px solid #1f2937",paddingBottom:12}}>
+              <div className="flex" style={{marginBottom:6}}>
+                <span style={{fontSize:18}}>{p.icon}</span>
+                <span className="bold" style={{color:p.color}}>{p.name}</span>
+                <ProviderBadge tag={p.tag}/>
+                <a href={p.keyUrl} target="_blank" style={{marginLeft:"auto",fontSize:11,color:"#7c3aed"}}>Pobierz klucz →</a>
+              </div>
+              <div className="text-xs" style={{marginBottom:8}}>{p.desc}</div>
+              <div className="key-row">
+                <input className="input input-password" type="password" placeholder={`${p.name} API Key...`}
+                  value={vals[pid]||""} onChange={e=>save(pid,e.target.value)}/>
+                <button className="btn btn-secondary btn-sm" onClick={()=>test(pid)} disabled={testing[pid]}>
+                  {testing[pid] ? <span className="spinner"/> : "Test"}
+                </button>
+              </div>
+              {results[pid] && <div className="text-xs mt4" style={{color: results[pid].startsWith("✅")?"#34d399":"#f87171"}}>{results[pid]}</div>}
+            </div>
+          ))}
+          <div style={{borderBottom:"1px solid #1f2937",paddingBottom:12}}>
+            <div className="flex" style={{marginBottom:6}}>
+              <span style={{fontSize:18}}>🖥️</span>
+              <span className="bold" style={{color:"#10b981"}}>Ollama (Lokalny)</span>
+              <ProviderBadge tag="LOCAL"/>
+            </div>
+            <div className="text-xs" style={{marginBottom:8}}>Uruchom modele lokalnie. Zainstaluj Ollama z ollama.com, potem: <code style={{background:"#0f172a",padding:"1px 4px",borderRadius:3}}>ollama pull llama3.2</code></div>
+            <button className="btn btn-secondary btn-sm" onClick={()=>test("ollama")}>Sprawdź status</button>
+            {results["ollama"] && <div className="text-xs mt4 text-warning">{results["ollama"]}</div>}
+          </div>
+        </div>
+        <button className="btn btn-primary" style={{marginTop:12,width:"100%"}} onClick={saveAll}>💾 Zapisz wszystkie klucze</button>
+      </div>
+      <div className="card">
+        <div className="card-title">📋 Instrukcja szybkiego startu</div>
+        <div className="flex-col">
+          <div className="alert alert-info">
+            <strong>1. Groq (Najszybszy — rekomendowany):</strong><br/>
+            Idź na <a href="https://console.groq.com" target="_blank" style={{color:"#93c5fd"}}>console.groq.com</a> → Zaloguj się przez Google/GitHub → API Keys → Create Key → Wklej tutaj
+          </div>
+          <div className="alert alert-info">
+            <strong>2. Google Gemini (Najpotężniejszy free):</strong><br/>
+            Idź na <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{color:"#93c5fd"}}>aistudio.google.com</a> → Get API Key → Wklej tutaj
+          </div>
+          <div className="alert alert-info">
+            <strong>3. OpenRouter (Najbardziej różnorodny):</strong><br/>
+            Idź na <a href="https://openrouter.ai/keys" target="_blank" style={{color:"#93c5fd"}}>openrouter.ai</a> → Sign Up → Keys → Create Key → Wklej tutaj (konto $0 działa na free modelach!)
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Chat Panel
+function ChatPanel({keys}) {
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [provider, setProvider] = useState("groq");
+  const [model, setModel] = useState(PROVIDERS.groq.models[0].id);
+  const [system, setSystem] = useState("");
+  const [showSys, setShowSys] = useState(false);
+  const [stats, setStats] = useState({msgs:0, tokens:0, cost:"0.00"});
+  const endRef = useRef();
+
+  useEffect(()=>{ endRef.current?.scrollIntoView({behavior:"smooth"}) }, [msgs]);
+
+  const changeProvider = (p) => {
+    setProvider(p);
+    setModel(PROVIDERS[p].models[0].id);
+  };
+
+  const send = async () => {
+    if(!input.trim()||loading) return;
+    const apiKey = keys[provider]||"";
+    if(provider!=="ollama" && !apiKey) {
+      setMsgs(m=>[...m,{role:"system",content:`⚠️ Brak klucza dla ${PROVIDERS[provider].name}. Idź do Ustawień.`}]);
+      return;
+    }
+    const userMsg = {role:"user", content:input};
+    setMsgs(m=>[...m,userMsg]);
+    setInput("");
+    setLoading(true);
+    const history = [...msgs.filter(m=>m.role!=="system"), userMsg];
+    const res = await callAI({provider, model, messages:history, api_key:apiKey, system_prompt:system||undefined});
+    setLoading(false);
+    if(res.error) {
+      setMsgs(m=>[...m,{role:"error",content:res.error}]);
+    } else {
+      setMsgs(m=>[...m,{role:"assistant",content:res.response,meta:`${res.provider} / ${res.model} · ${res.tokens_used||0} tokenów · ${res.latency_ms||0}ms`}]);
+      setStats(s=>({msgs:s.msgs+1,tokens:s.tokens+(res.tokens_used||0),cost:"0.00"}));
+    }
+  };
+
+  const activeKey = keys[provider];
+  const hasKey = provider==="ollama" || !!activeKey;
+
+  return (
+    <div className="panel" style={{height:"100%"}}>
+      <div className="stats-row">
+        <div className="stat"><div className="stat-val">{stats.msgs}</div><div className="stat-label">Wiadomości</div></div>
+        <div className="stat"><div className="stat-val">{stats.tokens.toLocaleString()}</div><div className="stat-label">Tokeny</div></div>
+        <div className="stat"><div className="stat-val" style={{color:"#34d399"}}>FREE</div><div className="stat-label">Koszt</div></div>
+      </div>
+      <div className="card" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
+        <div className="flex" style={{marginBottom:10,flexWrap:"wrap",gap:6}}>
+          <select className="select" style={{maxWidth:150}} value={provider} onChange={e=>changeProvider(e.target.value)}>
+            {Object.entries(PROVIDERS).map(([k,p])=>(
+              <option key={k} value={k}>{p.icon} {p.name}</option>
+            ))}
+          </select>
+          <select className="select grow" value={model} onChange={e=>setModel(e.target.value)}>
+            {PROVIDERS[provider].models.map(m=>(
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+          <button className="btn btn-secondary btn-sm" onClick={()=>setShowSys(!showSys)}>⚙️ System</button>
+          <button className="btn btn-danger btn-sm" onClick={()=>setMsgs([])}>🗑️</button>
+        </div>
+        {showSys && <div style={{marginBottom:8}}><textarea className="input" rows={2} placeholder="System prompt (opcjonalny)..." value={system} onChange={e=>setSystem(e.target.value)}/></div>}
+        {!hasKey && <div className="alert alert-warning" style={{marginBottom:8}}>⚠️ Brak klucza API dla {PROVIDERS[provider].name}. Dodaj go w Ustawieniach.</div>}
+        <div className="chat-msgs">
+          {msgs.length===0 && <div className="msg msg-system">👋 Witaj w OMEGA-AI! Wybierz providera i zacznij rozmowę.</div>}
+          {msgs.map((m,i)=>(
+            <div key={i} className={`msg msg-${m.role==="user"?"user":m.role==="error"?"error":m.role==="system"?"system":"ai"}`}>
+              {m.content}
+              {m.meta && <div className="msg-meta">{m.meta}</div>}
+            </div>
+          ))}
+          {loading && <div className="msg msg-ai"><span className="spinner"/> Generuję odpowiedź...</div>}
+          <div ref={endRef}/>
+        </div>
+        <div className="chat-input-row">
+          <textarea className="input" value={input} onChange={e=>setInput(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}
+            placeholder="Napisz wiadomość... (Enter = wyślij, Shift+Enter = nowa linia)"/>
+          <button className="btn btn-primary" onClick={send} disabled={loading||!hasKey}>
+            {loading ? <span className="spinner"/> : "Wyślij"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Experts Panel
+function ExpertsPanel({keys}) {
+  const [selected, setSelected] = useState(null);
+  const [provider, setProvider] = useState("groq");
+  const [model, setModel] = useState(PROVIDERS.groq.models[0].id);
+  const [input, setInput] = useState("");
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const ask = async () => {
+    if(!input.trim()||!selected||loading) return;
+    const expert = EXPERTS.find(e=>e.id===selected);
+    setLoading(true); setResult("");
+    const apiKey = keys[provider]||"";
+    const res = await callAI({provider, model, messages:[{role:"user",content:input}], api_key:apiKey, system_prompt:expert.prompt});
+    setLoading(false);
+    setResult(res.error ? "❌ "+res.error : res.response);
+  };
+
+  return (
+    <div className="panel">
+      <div className="card">
+        <div className="card-title">🎓 Wybierz Eksperta</div>
+        <div className="expert-grid">
+          {EXPERTS.map(e=>(
+            <div key={e.id} className={`expert-card${selected===e.id?" selected":""}`} onClick={()=>setSelected(e.id)}>
+              <div className="expert-icon">{e.icon}</div>
+              <div className="expert-name">{e.name}</div>
+              <div className="expert-role">{e.role}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="card">
+        <div className="flex" style={{marginBottom:10,gap:8}}>
+          <select className="select" style={{maxWidth:160}} value={provider} onChange={e=>{setProvider(e.target.value);setModel(PROVIDERS[e.target.value].models[0].id)}}>
+            {Object.entries(PROVIDERS).map(([k,p])=><option key={k} value={k}>{p.icon} {p.name}</option>)}
+          </select>
+          <select className="select grow" value={model} onChange={e=>setModel(e.target.value)}>
+            {PROVIDERS[provider].models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+        </div>
+        <textarea className="input" rows={3} value={input} onChange={e=>setInput(e.target.value)}
+          placeholder={selected ? `Zapytaj ${EXPERTS.find(e=>e.id===selected)?.name}...` : "Najpierw wybierz eksperta..."}/>
+        <button className="btn btn-primary" style={{marginTop:8,width:"100%"}} onClick={ask} disabled={loading||!selected||!input.trim()}>
+          {loading ? <><span className="spinner"/> Konsultacja...</> : "🔮 Konsultuj Eksperta"}
+        </button>
+        {result && <div className="result-box" style={{marginTop:10}}>{result}</div>}
+      </div>
+    </div>
+  );
+}
+
+// Compare Panel
+function ComparePanel({keys}) {
+  const [input, setInput] = useState("");
+  const [pairs, setPairs] = useState([
+    {provider:"groq", model:"llama-3.3-70b-versatile"},
+    {provider:"gemini", model:"gemini-1.5-flash"},
+  ]);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const addPair = () => {
+    setPairs(p=>[...p, {provider:"openrouter", model:"meta-llama/llama-3.2-3b-instruct:free"}]);
+    setResults([]);
+  };
+  const removePair = (i) => { setPairs(p=>p.filter((_,j)=>j!==i)); setResults([]); };
+  const updatePair = (i, field, val) => {
+    setPairs(p=>p.map((x,j)=>j===i ? (field==="provider" ? {provider:val, model:PROVIDERS[val].models[0].id} : {...x,model:val}) : x));
+  };
+
+  const compare = async () => {
+    if(!input.trim()||loading) return;
+    setLoading(true); setResults([]);
+    const res = await Promise.all(pairs.map(async pair => {
+      const r = await callAI({provider:pair.provider, model:pair.model, messages:[{role:"user",content:input}], api_key:keys[pair.provider]||""});
+      return {...pair, result:r};
+    }));
+    setResults(res);
+    setLoading(false);
+  };
+
+  return (
+    <div className="panel">
+      <div className="card">
+        <div className="card-title">⚖️ Porównaj Modele Równolegle</div>
+        <textarea className="input" rows={3} value={input} onChange={e=>setInput(e.target.value)} placeholder="Wpisz zapytanie do porównania..."/>
+        <div style={{marginTop:10}}>
+          {pairs.map((pair,i)=>(
+            <div key={i} className="flex" style={{marginBottom:8}}>
+              <select className="select" style={{maxWidth:160}} value={pair.provider} onChange={e=>updatePair(i,"provider",e.target.value)}>
+                {Object.entries(PROVIDERS).map(([k,p])=><option key={k} value={k}>{p.icon} {p.name}</option>)}
+              </select>
+              <select className="select grow" value={pair.model} onChange={e=>updatePair(i,"model",e.target.value)}>
+                {PROVIDERS[pair.provider].models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+              {pairs.length>2 && <button className="btn btn-danger btn-sm" onClick={()=>removePair(i)}>✕</button>}
+            </div>
+          ))}
+          <div className="flex" style={{gap:8,marginTop:4}}>
+            <button className="btn btn-secondary btn-sm" onClick={addPair}>+ Dodaj model</button>
+            <button className="btn btn-primary" onClick={compare} disabled={loading||!input.trim()}>
+              {loading ? <><span className="spinner"/> Porównuję...</> : "⚡ Porównaj"}
+            </button>
+          </div>
+        </div>
+      </div>
+      {results.length>0 && (
+        <div className="compare-grid">
+          {results.map((r,i)=>(
+            <div key={i} className="compare-result">
+              <div className="compare-header">
+                <span>{PROVIDERS[r.provider].icon} {PROVIDERS[r.provider].name}</span>
+                <span className="text-xs">{r.result.latency_ms||0}ms · {r.result.tokens_used||0}tok</span>
+              </div>
+              <div style={{fontSize:12,lineHeight:1.6,color:r.result.error?"#f87171":"#d1d5db",whiteSpace:"pre-wrap"}}>
+                {r.result.error ? "❌ "+r.result.error : r.result.response}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Pipeline Panel
+function PipelinePanel({keys}) {
+  const [input, setInput] = useState("");
+  const [steps, setSteps] = useState([
+    {expertId:"analyst", provider:"groq", model:"llama-3.3-70b-versatile", label:"Analiza"},
+    {expertId:"dev", provider:"groq", model:"llama-3.3-70b-versatile", label:"Implementacja"},
+  ]);
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState([]);
+
+  const addStep = () => setSteps(s=>[...s, {expertId:"sci", provider:"groq", model:PROVIDERS.groq.models[0].id, label:"Weryfikacja"}]);
+  const removeStep = (i) => setSteps(s=>s.filter((_,j)=>j!==i));
+
+  const run = async () => {
+    if(!input.trim()||running) return;
+    setRunning(true); setProgress([]);
+    let context = input;
+    const results = [];
+    for(let i=0; i<steps.length; i++) {
+      const step = steps[i];
+      const expert = EXPERTS.find(e=>e.id===step.expertId);
+      setProgress(p=>[...p,{step:i, status:"running", label:step.label}]);
+      const prompt = i===0 ? context : `Poprzedni wynik:\n${results[i-1]?.response||""}\n\nZadanie: ${context}`;
+      const res = await callAI({provider:step.provider, model:step.model, messages:[{role:"user",content:prompt}], api_key:keys[step.provider]||"", system_prompt:expert?.prompt});
+      results.push(res);
+      setProgress(p=>p.map((x,j)=>j===i?{...x,status:res.error?"error":"done",result:res.error?res.error:res.response}:x));
+    }
+    setRunning(false);
+  };
+
+  return (
+    <div className="panel">
+      <div className="card">
+        <div className="card-title">⚡ Pipeline Ekspertów</div>
+        <textarea className="input" rows={3} value={input} onChange={e=>setInput(e.target.value)} placeholder="Zadanie do przetworzenia przez pipeline..."/>
+        <div className="pipeline-steps" style={{marginTop:12}}>
+          {steps.map((step,i)=>(
+            <React.Fragment key={i}>
+              <div className="pipeline-step">
+                <div className="step-num">{i+1}</div>
+                <select className="select" style={{maxWidth:130}} value={step.expertId} onChange={e=>setSteps(s=>s.map((x,j)=>j===i?{...x,expertId:e.target.value}:x))}>
+                  {EXPERTS.map(e=><option key={e.id} value={e.id}>{e.icon} {e.name}</option>)}
+                </select>
+                <select className="select" style={{maxWidth:130}} value={step.provider} onChange={e=>setSteps(s=>s.map((x,j)=>j===i?{...x,provider:e.target.value,model:PROVIDERS[e.target.value].models[0].id}:x))}>
+                  {Object.entries(PROVIDERS).map(([k,p])=><option key={k} value={k}>{p.icon} {p.name}</option>)}
+                </select>
+                {steps.length>1 && <button className="btn btn-danger btn-sm" onClick={()=>removeStep(i)}>✕</button>}
+              </div>
+              {i<steps.length-1 && <div className="step-arrow">↓</div>}
+            </React.Fragment>
+          ))}
+        </div>
+        <div className="flex" style={{gap:8,marginTop:10}}>
+          <button className="btn btn-secondary btn-sm" onClick={addStep}>+ Dodaj krok</button>
+          <button className="btn btn-primary" onClick={run} disabled={running||!input.trim()}>
+            {running ? <><span className="spinner"/> Przetwarzam...</> : "🚀 Uruchom Pipeline"}
+          </button>
+        </div>
+      </div>
+      {progress.length>0 && (
+        <div className="card">
+          <div className="card-title">📋 Postęp</div>
+          <div className="flex-col">
+            {progress.map((p,i)=>(
+              <div key={i}>
+                <div className="flex" style={{marginBottom:4}}>
+                  <span className="badge" style={{background: p.status==="running"?"#1a3a2a":p.status==="done"?"#064e3b":"#450a0a", color: p.status==="running"?"#34d399":p.status==="done"?"#6ee7b7":"#fca5a5"}}>
+                    {p.status==="running"?"⏳":p.status==="done"?"✅":"❌"} Krok {i+1}: {steps[i]?.label||""}
+                  </span>
+                </div>
+                {p.result && <div className="result-box" style={{maxHeight:150}}>{p.result}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Decoder Panel (fully client-side)
+function DecoderPanel() {
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [format, setFormat] = useState("base64_decode");
+  const FORMATS = [
+    {id:"base64_decode",label:"Base64 ▶ Tekst"},{id:"base64_encode",label:"Tekst ▶ Base64"},
+    {id:"hex_decode",label:"Hex ▶ Tekst"},{id:"hex_encode",label:"Tekst ▶ Hex"},
+    {id:"binary_decode",label:"Binary ▶ Tekst"},{id:"binary_encode",label:"Tekst ▶ Binary"},
+    {id:"url_decode",label:"URL Decode"},{id:"url_encode",label:"URL Encode"},
+    {id:"rot13",label:"ROT13"},{id:"reverse",label:"Odwróć"},
+    {id:"unicode",label:"▶ Unicode"},{id:"morse",label:"▶ Morse"},
+  ];
+  const run = () => setOutput(decode(input, format));
+  return (
+    <div className="panel">
+      <div className="card">
+        <div className="card-title">🔐 Koder / Dekoder <span className="badge badge-free" style={{marginLeft:8}}>CLIENT-SIDE — OFFLINE</span></div>
+        <div className="format-grid">
+          {FORMATS.map(f=>(
+            <div key={f.id} className={`format-chip${format===f.id?" active":""}`} onClick={()=>setFormat(f.id)}>{f.label}</div>
+          ))}
+        </div>
+        <label>Wejście</label>
+        <textarea className="input" rows={4} value={input} onChange={e=>setInput(e.target.value)} placeholder="Wpisz tekst do konwersji..."/>
+        <button className="btn btn-primary" style={{marginTop:8,marginBottom:8}} onClick={run}>⚡ Konwertuj</button>
+        {output && <>
+          <label>Wynik</label>
+          <div className="result-box">{output}</div>
+          <button className="btn btn-secondary btn-sm" style={{marginTop:6}} onClick={()=>{navigator.clipboard.writeText(output)}}>📋 Kopiuj</button>
+        </>}
+      </div>
+    </div>
+  );
+}
+
+// Memory Panel
+function MemoryPanel() {
+  const [notes, setNotes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("omega_notes")||"[]"); } catch { return []; }
+  });
+  const [input, setInput] = useState("");
+  const [tag, setTag] = useState("notatka");
+  const add = () => {
+    if(!input.trim()) return;
+    const next = [{id:Date.now(),content:input,tag,date:new Date().toLocaleString("pl")},...notes];
+    setNotes(next);
+    localStorage.setItem("omega_notes",JSON.stringify(next));
+    setInput("");
+  };
+  const del = (id) => {
+    const next = notes.filter(n=>n.id!==id);
+    setNotes(next);
+    localStorage.setItem("omega_notes",JSON.stringify(next));
+  };
+  const TAGS = ["notatka","lekcja","błąd","pomysł","ważne"];
+  return (
+    <div className="panel">
+      <div className="card">
+        <div className="card-title">🧠 Trwała Pamięć</div>
+        <div className="flex" style={{marginBottom:8,gap:8}}>
+          {TAGS.map(t=><div key={t} className={`format-chip${tag===t?" active":""}`} onClick={()=>setTag(t)}>{t}</div>)}
+        </div>
+        <textarea className="input" rows={3} value={input} onChange={e=>setInput(e.target.value)} placeholder="Dodaj notatkę, lekcję lub pomysł..."/>
+        <button className="btn btn-primary" style={{marginTop:8}} onClick={add}>💾 Zapisz</button>
+      </div>
+      {notes.map(n=>(
+        <div key={n.id} className="card" style={{borderLeft:`3px solid ${n.tag==="błąd"?"#f87171":n.tag==="lekcja"?"#fbbf24":n.tag==="ważne"?"#f59e0b":"#7c3aed"}`}}>
+          <div className="flex" style={{marginBottom:4}}>
+            <span className="badge" style={{background:"#1f2937",color:"#9ca3af"}}>{n.tag}</span>
+            <span className="text-xs" style={{marginLeft:"auto"}}>{n.date}</span>
+            <button className="btn btn-danger btn-sm" style={{marginLeft:8,padding:"2px 8px"}} onClick={()=>del(n.id)}>✕</button>
+          </div>
+          <div style={{fontSize:13,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{n.content}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+//  MAIN APP
+// ══════════════════════════════════════════════════════
+function App() {
+  const [tab, setTab] = useState("chat");
+  const [keys, setKeys] = useState(() => loadState().api_keys || {});
+
+  const TABS = [
+    {id:"chat", label:"💬 Chat"},
+    {id:"experts", label:"🎓 Eksperci"},
+    {id:"pipeline", label:"⚡ Pipeline"},
+    {id:"compare", label:"⚖️ Porównaj"},
+    {id:"decode", label:"🔐 Koder"},
+    {id:"memory", label:"🧠 Pamięć"},
+    {id:"settings", label:"⚙️ Ustawienia"},
+  ];
+
+  const activeProviders = Object.entries(keys).filter(([k,v])=>v&&PROVIDERS[k]).length;
+
+  return (
+    <div className="app">
+      <div className="header">
+        <div>
+          <div className="logo">⚡ OMEGA-AI</div>
+          <div className="logo-sub">Multi-AI Orchestrator v3</div>
+        </div>
+        <div className="status-badge">
+          {activeProviders>0 ? (
+            <span className="badge badge-free">✅ {activeProviders} PROVIDER{activeProviders>1?"Y":""} AKTYWNE</span>
+          ) : (
+            <span className="badge" style={{background:"#451a03",color:"#fb923c",border:"1px solid #92400e"}}>⚠️ BRAK KLUCZY</span>
+          )}
+          <span className="badge badge-local">🔐 OFFLINE DECODE</span>
+        </div>
+      </div>
+      <div className="tabs">
+        {TABS.map(t=>(
+          <div key={t.id} className={`tab${tab===t.id?" active":""}`} onClick={()=>setTab(t.id)}>{t.label}</div>
+        ))}
+      </div>
+      <div className="content">
+        {tab==="chat" && <ChatPanel keys={keys}/>}
+        {tab==="experts" && <ExpertsPanel keys={keys}/>}
+        {tab==="pipeline" && <PipelinePanel keys={keys}/>}
+        {tab==="compare" && <ComparePanel keys={keys}/>}
+        {tab==="decode" && <DecoderPanel/>}
+        {tab==="memory" && <MemoryPanel/>}
+        {tab==="settings" && <SettingsPanel keys={keys} setKeys={setKeys}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
